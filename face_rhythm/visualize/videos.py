@@ -12,7 +12,7 @@ import cv2
 import imageio
 
 from pathlib import Path
-from tqdm.notebook import trange
+from tqdm.notebook import trange, tqdm
 
 from face_rhythm.util import helpers
 from face_rhythm.visualize.make_custom_cmap import make_custom_cmap
@@ -238,6 +238,121 @@ def visualize_factor(config_filepath):
     cv2.destroyAllWindows()
 
 
+def make_color_tuples(factor, factor_toShow, n_points):
+    offset_toUse = np.min(factor[:, factor_toShow])
+    scores = factor[:, factor_toShow] - offset_toUse
+    # scores_norm = (scores_norm / np.max(scores_norm)) * (1/np.sqrt(2))
+    scores_x, scores_y = np.array_split(scores, 2)
+    scores_complex = scores_x + scores_y * 1j
+    scores_angle = (np.angle(scores_complex, deg=True) - 45) / 45
+    scores_mag = np.abs(scores_complex)
+    scores_mag = (scores_mag / np.max(scores_mag)) ** (1 / 1) * 1
+    scores_mag[scores_mag > 1] = 1
+
+    numColors = 256
+    # cmap = matplotlib.cm.get_cmap('brg', numColors)
+    cmap = make_custom_cmap()
+    print(cmap.shape)
+
+    color_tuples = list(np.arange(n_points))
+    for ii in range(n_points):
+        cmap_idx_toUse = np.int64(np.ceil(scores_angle[ii] * numColors / 2 + numColors / 2)) - 1
+        # color_tuples[ii] = list(np.flip((np.array(cmap(cmap_idx_toUse)))[:3]) * scores_mag[ii] * 255*1)
+        color_tuples[ii] = list(np.flip((np.array(cmap[cmap_idx_toUse]))) * scores_mag[ii] * 1 * 1)
+
+    return color_tuples
+
+
+def visualize_trials(config_filepath):
+    """
+    creates videos of the points colored by their positional factor values
+
+    Args:
+        config_filepath (Path): path to the config file
+
+    Returns:
+
+    """
+
+    config = helpers.load_config(config_filepath)
+    general = config['General']
+    video = config['Video']
+    optic = config['Optic']
+
+    demo_len = video['demo_len']
+    vid_width = video['width']
+    vid_height = video['height']
+    Fs = video['Fs']
+
+    factor_category_name = video['factor_category_to_display']
+    factor_name = video['factor_to_display']
+    points_name = video['points_to_display']
+
+    for session in general['sessions']:
+        factor = helpers.load_nwb_ts(session['nwb'], factor_category_name, factor_name)
+        factor_x, factor_y = np.array_split(factor, 2, axis=0)
+
+        points = helpers.load_nwb_ts(session['nwb'],'Optic Flow', points_name)
+        points_tuples = list(np.arange(points.shape[0]))
+        if factor_category_name == 'PCA':
+            rank = config['PCA']['n_factors_to_show']
+        else:
+            rank = factor.shape[1]
+
+        trial_types = session['trial_types']
+        trial_inds = np.load(session['trial_inds']).astype(int)
+        trial_labels = trial_inds[:,0]
+        trial_inds = trial_inds[:,1:]
+
+        for trial_type in trial_types:
+            trial_instance = trial_inds[trial_labels == trial_type][0]
+            trial_path = Path(config['Paths']['viz']) / 'trials' / f'trial_{trial_type}'
+            trial_path.mkdir(parents=True, exist_ok=True)
+
+            for factor_iter in range(rank):
+                path_name = factor_category_name + '__' + factor_name + '__' + points_name + '__' + f'factor_{factor_iter+1}.avi'
+                save_path = str(trial_path / path_name)
+
+                if general['remote'] or video['save_demo']:
+                    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+                    print(f'saving to file {save_path}')
+                    out = cv2.VideoWriter(save_path, fourcc, Fs, (np.int64(vid_width), np.int64(vid_height)))
+                else:
+                    out = None
+
+                factor_toShow = factor_iter
+
+                color_tuples = make_color_tuples(factor, factor_toShow, points.shape[0])
+
+                vidLens_toUse = [session['vid_lens'][vidnum] for vidnum in optic['vidNums_toUse']]
+                ind_concat = trial_instance[0]
+                ind_loop = 0
+                first_vid_ind = optic['vidNums_toUse'].index(start_vid)
+
+                for vid_num in optic['vidNums_toUse']:
+                    vid = imageio.get_reader(session['videos'][vid_num], 'ffmpeg')
+                    for iter_frame in tqdm(trial_instance):
+                        new_frame = vid.get_data(iter_frame)
+                        points_tracked = [points[:, np.newaxis, :, ind_concat], points_tuples]
+                        counters = [iter_frame, vid_num, ind_concat, Fs]
+                        visualize_progress(config, session, new_frame, points_tracked, color_tuples, counters, out)
+
+                        k = cv2.waitKey(1) & 0xff
+                        if k == 27: break
+
+                        ind_concat += 1
+
+                        if ind_concat >= demo_len:
+                            break
+                    if ind_concat >= demo_len:
+                        break
+
+                if general['remote'] or video['save_demo']:
+                    out.release()
+
+    cv2.destroyAllWindows()
+
+
 class TemporalTrace(object):
     def __init__(self, factor_temporal, start, end, width, fps, fig_width, fig_height):
         self.start = start
@@ -371,9 +486,10 @@ def face_with_trace(config_filepath):
             vidLens_toUse = [session['vid_lens'][vidnum] for vidnum in optic['vidNums_toUse']]
             ind_concat = int(sum(vidLens_toUse[:start_vid])) + start_frame
             ind_loop = 0
+            first_vid_ind = optic['vidNums_toUse'].index(start_vid)
             trace_plot = TemporalTrace(current_trace, ind_concat, current_trace.shape[0], Fs * 5, Fs, vid_width,
                                        vid_height)
-            first_vid_ind = optic['vidNums_toUse'].index(start_vid)
+
 
             for vid_num in optic['vidNums_toUse'][first_vid_ind:]:
                 vid = imageio.get_reader(session['videos'][vid_num], 'ffmpeg')

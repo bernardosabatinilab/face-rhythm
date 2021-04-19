@@ -158,8 +158,9 @@ def import_videos(config_filepath):
             elif vid.suffix in ['.npy'] and general['trials']:
                 session['trial_inds'] = str(vid)
                 trial_inds = np.load(session['trial_inds'])
+                session['trial_types'] = np.unique(trial_inds[:,0])
                 session['num_trials'] = trial_inds.shape[0]
-                session['trial_len'] = trial_inds.shape[1]
+                session['trial_len'] = trial_inds.shape[1] - 1
     general['sessions'].append(session)
     helpers.save_config(config, config_filepath)
 
