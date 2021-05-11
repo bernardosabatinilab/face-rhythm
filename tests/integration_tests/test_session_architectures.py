@@ -32,6 +32,8 @@ def run_basic(run_name):
 
     run_downstream(config_filepath)
 
+    return config_filepath
+
 def config_switch(run_name):
     project_path = Path('test_runs').resolve() / run_name
     video_path = Path('test_data').resolve() / run_name / 'session1'
@@ -245,59 +247,79 @@ def run_downstream(config_filepath):
 
     videos.visualize_factor(config_filepath)
 
-    config = helpers.load_config(config_filepath)
-    config['Video']['factor_category_to_display'] = 'TCA'
-    config['Video']['factor_to_display'] = 'factors_spectral_points'
-    config['Video']['points_to_display'] = 'positions_convDR_absolute'
-    config['Video']['start_vid'] = 0
-    config['Video']['start_frame'] = 0
-    config['Video']['demo_len'] = 10
-    config['Video']['dot_size'] = 2
-    config['Video']['save_demo'] = True
-    config['Video']['factors_to_show'] = []
-    config['Video']['show_alpha'] = True
-    config['Video']['pulse_test_index'] = 0
-    helpers.save_config(config, config_filepath)
-
-    videos.face_with_trace(config_filepath)
-    plt.close('all')
+    # config = helpers.load_config(config_filepath)
+    # config['Video']['factor_category_to_display'] = 'TCA'
+    # config['Video']['factor_to_display'] = 'factors_spectral_points'
+    # config['Video']['points_to_display'] = 'positions_convDR_absolute'
+    # config['Video']['start_vid'] = 0
+    # config['Video']['start_frame'] = 0
+    # config['Video']['demo_len'] = 10
+    # config['Video']['dot_size'] = 2
+    # config['Video']['save_demo'] = True
+    # config['Video']['factors_to_show'] = []
+    # config['Video']['show_alpha'] = True
+    # config['Video']['pulse_test_index'] = 0
+    # helpers.save_config(config, config_filepath)
+    #
+    # videos.face_with_trace(config_filepath)
+    # plt.close('all')
 
     # Cleanup
-    shutil.rmtree(config['Paths']['project'])
+    #shutil.rmtree(config['Paths']['project'])
+    return config_filepath
 
 
-def test_single_session_single_video():
+# def test_single_session_single_video():
+#     run_name = 'single_session_single_video'
+#     run_multi(run_name)
+#
+#
+# def test_single_session_multi_video():
+#     run_name = 'single_session_multi_video'
+#     run_multi(run_name)
+#
+#
+# def test_multi_session_single_video():
+#     run_name = 'multi_session_single_video'
+#     run_multi(run_name)
+#
+#
+# def test_multi_session_multi_video():
+#     run_name = 'multi_session_multi_video'
+#     run_multi(run_name)
+#
+#
+# def test_basic_single_video():
+#     run_name = 'single_session_single_video'
+#     run_basic(run_name)
+#
+#
+# def test_basic_multi_video():
+#     run_name = 'single_session_multi_video'
+#     run_basic(run_name)
+#
+# def test_config_update():
+#     run_name = 'single_session_single_video'
+#     config_filepath = config_switch(run_name)
+#     config = helpers.load_config(config_filepath)
+#     old_project_path = config['Paths']['project']
+#     new_project_path = str(Path(old_project_path).parent / 'test')
+#     shutil.copytree(old_project_path, new_project_path)
+#     config_filepath = helpers.update_config(new_project_path, run_name)
+#
+#     config = helpers.load_config(config_filepath)
+#     config['Video']['file_prefix'] = 'gmou06'
+#     config['Video']['print_filenames'] = True
+#     config['General']['overwrite_nwbs'] = True
+#     helpers.save_config(config, config_filepath)
+#     setup.prepare_videos(config_filepath)
+#
+#     run_downstream(config_filepath)
+
+def test_config_switch():
     run_name = 'single_session_single_video'
-    run_multi(run_name)
+    config_filepath = run_basic(run_name)
 
-
-def test_single_session_multi_video():
-    run_name = 'single_session_multi_video'
-    run_multi(run_name)
-
-
-def test_multi_session_single_video():
-    run_name = 'multi_session_single_video'
-    run_multi(run_name)
-
-
-def test_multi_session_multi_video():
-    run_name = 'multi_session_multi_video'
-    run_multi(run_name)
-
-
-def test_basic_single_video():
-    run_name = 'single_session_single_video'
-    run_basic(run_name)
-
-
-def test_basic_multi_video():
-    run_name = 'single_session_multi_video'
-    run_basic(run_name)
-
-def test_config_update():
-    run_name = 'single_session_single_video'
-    config_filepath = config_switch(run_name)
     config = helpers.load_config(config_filepath)
     old_project_path = config['Paths']['project']
     new_project_path = str(Path(old_project_path).parent / 'test')
@@ -305,10 +327,19 @@ def test_config_update():
     config_filepath = helpers.update_config(new_project_path, run_name)
 
     config = helpers.load_config(config_filepath)
-    config['Video']['file_prefix'] = 'gmou06'
-    config['Video']['print_filenames'] = True
-    config['General']['overwrite_nwbs'] = True
+    config['TCA']['ftype'] = 'spectral'
     helpers.save_config(config, config_filepath)
-    setup.prepare_videos(config_filepath)
 
-    run_downstream(config_filepath)
+    plots.plot_tca_factors(config_filepath)
+    plt.close('all')
+
+    config = helpers.load_config(config_filepath)
+    config['Video']['factor_category_to_display'] = 'TCA'
+    config['Video']['factor_to_display'] = 'factors_spectral_points'
+    config['Video']['points_to_display'] = 'positions_convDR_absolute'
+    config['Video']['demo_len'] = 10
+    config['Video']['dot_size'] = 2
+    config['Video']['save_demo'] = True
+    helpers.save_config(config, config_filepath)
+
+    videos.visualize_factor(config_filepath)
