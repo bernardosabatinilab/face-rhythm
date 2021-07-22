@@ -277,6 +277,7 @@ def brighten_colors(cmap, alpha):
     cmap_hsv = np.array([colorsys.rgb_to_hsv(*[c / 255 for c in rgb]) for rgb in cmap])
     cmap_hsv[:, -1] *= alpha
     cmap_brighter = [[255 * c for c in colorsys.hsv_to_rgb(*hsv)] for hsv in cmap_hsv]
+    # set to max out at rgb triplet
     return cmap_brighter
 
 
