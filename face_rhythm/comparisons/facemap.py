@@ -261,6 +261,7 @@ def facemap_workflow(config_filepath):
         crop_limits = batch.get_crop_limits(mask)
         Lyb, Lxb = batch.get_binned_limits(sbin, crop_limits)
 
+
         avgframe, avgmotion = mean_chunked(video_paths, vid_lens, nframes, mask, crop_limits, sbin, Lyb, Lxb)
         USV, U = svd_chunked(video_paths, vid_lens, nframes, mask, crop_limits, sbin, Lyb, Lxb, avgmotion, ncomps)
         motSVD = project_pcs_chunked(video_paths, vid_lens, nframes, mask, crop_limits, sbin, Lyb, Lxb, avgmotion, U)
@@ -271,6 +272,7 @@ def facemap_workflow(config_filepath):
         helpers.create_nwb_group(session['nwb'], 'FaceMap')
         helpers.create_nwb_ts(session['nwb'], 'FaceMap', 'eigenvectors', U, config['Video']['Fs'])
         helpers.create_nwb_ts(session['nwb'], 'FaceMap', 'projections', motSVD, config['Video']['Fs'])
+        helpers.create_nwb_ts(session['nwb'], 'FaceMap', 'variance_explained', variance_explained, 1.0)
 
 
 def ipca_workflow(config_filepath):

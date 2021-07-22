@@ -8,7 +8,7 @@ from joblib import Parallel, delayed
 from tqdm.auto import tqdm
 
 from face_rhythm.util import helpers, batch
-from .facemap import ChunkedAnalyzer
+from face_rhythm.comparisons.facemap import ChunkedAnalyzer
 
 
 def imagesToHogsCellCrop(vid_chunk, pixelsPerCell):
@@ -73,7 +73,7 @@ def hog_workflow(config_filepath):
 
 
 class HoG(ChunkedAnalyzer):
-    def __init__(self, *args, cell_size):
+    def __init__(self, *args, cell_size=8):
         super().__init__(*args)
         self.cell_size = cell_size
         self.hog_arrays = []

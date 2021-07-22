@@ -1,6 +1,6 @@
 import cv2
 import h5py
-from matplotlib import  pyplot as plt
+from matplotlib import pyplot as plt
 
 from face_rhythm.util import helpers, set_roi, setup
 from face_rhythm.optic_flow import optic_flow, clean_results, conv_dim_reduce
@@ -43,6 +43,22 @@ def config_switch(run_name):
 
     return setup.setup_project(project_path, video_path, run_name, overwrite_config, remote, trials,
                                           multisession)
+
+
+def compare_time_dimension(config_filepath):
+    config = helpers.load_config(config_filepath)
+    for session in config['General']['sessions']:
+        disps = helpers.load_nwb_ts(session['nwb'], 'Optic Flow', 'displacements').T
+        pcs = helpers.load_nwb_ts(session['nwb'], 'PCA', 'factors_temporal')
+        tcs = helpers.load_nwb_ts(session['nwb'], 'TCA', 'factors_spectral_temporal_interp')
+        fms = helpers.load_nwb_ts(session['nwb'], 'FaceMap', 'projections')
+        hogs = helpers.load_nwb_ts(session['nwb'], 'HoG', 'arrays')
+        factor_dict = {'disp':disps, 'pca':pcs, 'tca':tcs, 'facemap':fms, 'hog':hogs}
+        for name, factor in factor_dict.items():
+            for other_name, other_factor in factor_dict.items():
+                print(f'{name}: {factor.shape}')
+                print(f'{other_name}: {other_factor.shape}')
+                assert factor.shape[0] == other_factor.shape[0]
 
 
 def run_multi(run_name):
@@ -279,6 +295,8 @@ def run_downstream(config_filepath):
 
     hog.hog_workflow(config_filepath)
 
+    compare_time_dimension(config_filepath)
+
     # Cleanup
     shutil.rmtree(config['Paths']['project'])
 
@@ -288,44 +306,44 @@ def test_single_session_single_video():
     run_multi(run_name)
 
 
-def test_single_session_multi_video():
-    run_name = 'single_session_multi_video'
-    run_multi(run_name)
-
-
-def test_multi_session_single_video():
-    run_name = 'multi_session_single_video'
-    run_multi(run_name)
-
-
-def test_multi_session_multi_video():
-    run_name = 'multi_session_multi_video'
-    run_multi(run_name)
-
-
-def test_basic_single_video():
-    run_name = 'single_session_single_video'
-    run_basic(run_name)
-
-
-def test_basic_multi_video():
-    run_name = 'single_session_multi_video'
-    run_basic(run_name)
-
-def test_config_update():
-    run_name = 'single_session_single_video'
-    config_filepath = config_switch(run_name)
-    config = helpers.load_config(config_filepath)
-    old_project_path = config['Paths']['project']
-    new_project_path = str(Path(old_project_path).parent / 'test')
-    shutil.copytree(old_project_path, new_project_path)
-    config_filepath = helpers.update_config(new_project_path, run_name)
-
-    config = helpers.load_config(config_filepath)
-    config['Video']['file_prefix'] = 'gmou06'
-    config['Video']['print_filenames'] = True
-    config['General']['overwrite_nwbs'] = True
-    helpers.save_config(config, config_filepath)
-    setup.prepare_videos(config_filepath)
-
-    run_downstream(config_filepath)
+# def test_single_session_multi_video():
+#     run_name = 'single_session_multi_video'
+#     run_multi(run_name)
+#
+#
+# def test_multi_session_single_video():
+#     run_name = 'multi_session_single_video'
+#     run_multi(run_name)
+#
+#
+# def test_multi_session_multi_video():
+#     run_name = 'multi_session_multi_video'
+#     run_multi(run_name)
+#
+#
+# def test_basic_single_video():
+#     run_name = 'single_session_single_video'
+#     run_basic(run_name)
+#
+#
+# def test_basic_multi_video():
+#     run_name = 'single_session_multi_video'
+#     run_basic(run_name)
+#
+# def test_config_update():
+#     run_name = 'single_session_single_video'
+#     config_filepath = config_switch(run_name)
+#     config = helpers.load_config(config_filepath)
+#     old_project_path = config['Paths']['project']
+#     new_project_path = str(Path(old_project_path).parent / 'test')
+#     shutil.copytree(old_project_path, new_project_path)
+#     config_filepath = helpers.update_config(new_project_path, run_name)
+#
+#     config = helpers.load_config(config_filepath)
+#     config['Video']['file_prefix'] = 'gmou06'
+#     config['Video']['print_filenames'] = True
+#     config['General']['overwrite_nwbs'] = True
+#     helpers.save_config(config, config_filepath)
+#     setup.prepare_videos(config_filepath)
+#
+#     run_downstream(config_filepath)
