@@ -1,6 +1,7 @@
 from typing import Union
 from pathlib import Path
 import copy
+import gc
 
 import numpy as np
 import cv2
@@ -120,7 +121,7 @@ class FrameVisualizer:
                 If list: Each element is a thickness for a different text.
                     Length of list must match the length of text.
         """
-        ## Stor arguments
+        ## Store arguments
         self.point_sizes = point_sizes if point_sizes is not None else None
         self.points_colors = points_colors if points_colors is not None else None
         self.alpha = alpha if alpha is not None else None
@@ -415,8 +416,11 @@ class FrameVisualizer:
 
     def close(self):
         if self.video_writer is not None:
-            self.video_writer.release()
             cv2.destroyWindow(self.handle_cv2Imshow)
+            try:
+                self.video_writer.release()
+            except:
+                pass
 
     def __call__(self, *args, **kwds):
         """
@@ -426,11 +430,7 @@ class FrameVisualizer:
         self.visualize_image_with_points(*args, **kwds)
     def __del__(self):
         self.close()
-    def __exit__(self):
-        self.close()
-    def __enter__(self):
-        return self
-    
+
     def __repr__(self):
         return f'FrameVisualizer(handle_cv2Imshow={self.handle_cv2Imshow}, display={self.display}, video_writer={self.video_writer}, path_video={self.path_save}, frame_rate={self.frame_rate}, frame_height_width={self.frame_height_width})'
 
@@ -477,15 +477,26 @@ def play_video_with_points(
         ### Set buffered video reader to first frame
         bufferedVideoReader.set_iterator_frame_idx(int(idx_frames[0]))
         ### Iterate through frames
-        for idx_frame in tqdm(idx_frames):
-            frame = bufferedVideoReader[idx_frame][0]
-            frame = frame.numpy() if isinstance(frame, torch.Tensor) else frame
-            p = points_int[idx_frame] if points_int is not None else None
-            frameVisualizer.visualize_image_with_points(
-                image=frame,
-                points=[p],
-            )
-        frameVisualizer.close()
+        ### Use context manager to close frameVisualizer
+        class CM:
+            def __init__(self, frameVisualizer):
+                self.frameVisualizer = frameVisualizer
+            def __enter__(self):
+                return self.frameVisualizer
+            def __exit__(self, exc_type, exc_value, traceback):
+                self.frameVisualizer.close()
+                cv2.destroyWindow(self.frameVisualizer.handle_cv2Imshow)
+                gc.collect()
+        with CM(frameVisualizer) as f:
+            for idx_frame in tqdm(idx_frames):
+                frame = bufferedVideoReader[idx_frame][0]
+                frame = frame.numpy() if isinstance(frame, torch.Tensor) else frame
+                p = points_int[idx_frame] if points_int is not None else None
+                f.visualize_image_with_points(
+                    image=frame,
+                    points=[p],
+                )
+            f.close()
 
 
 # def display_toggle_image_stack(images, clim=None, **kwargs):
