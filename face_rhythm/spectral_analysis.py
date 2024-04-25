@@ -14,6 +14,20 @@ class VQT_Analyzer(FR_Module):
      displacement traces. The spectrograms are generated using
      the Variable Q-Transform (VQT) algorithm.
     RH 2022
+
+    Args:
+        params_VQT (dict):
+            A dictionary of parameters to pass to the VQT class (Variable
+            Q-Transform) in helpers.py.
+        normalization_factor (float):
+            A float between 0 and 1 to normalize the spectrograms. 0 means no
+            normalization. 1 means every time point has the same power.
+        spectrogram_exponent (float):
+            A float to raise the spectrogram to before normalizing.
+        one_over_f_exponent (float):
+            A float to raise the frequency axis to before doing 1/f correction.
+        verbose (int):
+            An integer to control the verbosity of the class.
     """
     def __init__(
         self,

@@ -22,8 +22,8 @@ import torch  ## For some reason, it crashes if I don't import torch before othe
 
 
 ## Prepare cv2.imshow
-import pkg_resources
-installed_packages = {pkg.key for pkg in pkg_resources.working_set}
+import importlib.metadata
+installed_packages = {dist.metadata['Name'] for dist in importlib.metadata.distributions()}
 has_cv2_headless = 'opencv-contrib-python-headless' in installed_packages
 has_cv2_normal = 'opencv-contrib-python' in installed_packages
 if has_cv2_normal and not has_cv2_headless:
@@ -66,4 +66,4 @@ for pkg in __all__:
     exec('from . import ' + pkg)
 
 
-__version__ = '0.2.4'
+__version__ = '0.2.5'
