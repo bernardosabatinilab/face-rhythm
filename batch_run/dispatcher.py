@@ -35,7 +35,7 @@ params_template = {
         "overwrite_config": True,
         "update_project_paths": True,
         "initialize_visualization": False,
-        "use_GPU": False,
+        "use_GPU": True,
         "random_seed": 0,
         "verbose": 2,
     },
@@ -84,16 +84,16 @@ params_template = {
         },
     },
     "PointTracker": {
-        "contiguous": False,
+        "contiguous": True,
         "params_optical_flow": {
             "method": "lucas_kanade",
-            "mesh_rigidity": 0.025,
-            "mesh_n_neighbors": 8,
+            "mesh_rigidity": 0.045,
+            "mesh_n_neighbors": 12,
             "relaxation": 0.0015,
             "kwargs_method": {
                 "winSize": [
-                    20,
-                    20,
+                    25,
+                    25,
                 ],
                 "maxLevel": 2,
                 "criteria": [
@@ -110,19 +110,19 @@ params_template = {
         },
         "params_outlier_handling": {
             "threshold_displacement": 150,
-            "framesHalted_before": 10,
-            "framesHalted_after": 10,
+            "framesHalted_before": 40,
+            "framesHalted_after": 40,
         },
         "verbose": 2,
     },
     "VQT_Analyzer": {
         "params_VQT": {
-            "Q_lowF": 4,
-            "Q_highF": 10,
+            "Q_lowF": 3,
+            "Q_highF": 5,
             "F_min": 1.0,
             "F_max": 60,
             "n_freq_bins": 36,
-            "win_size": 501,
+            "win_size": 701,
             "symmetry": 'left',
             "taper_asymmetric": True,
             "plot_pref": False,
@@ -163,7 +163,7 @@ params_template = {
         "fit": {
             "method": "CP_NN_HALS",
             "params_method": {
-                "rank": 12,
+                "rank": 10,
                 "n_iter_max": 200,
                 "init": "random",
                 "svd": "truncated_svd",
@@ -241,12 +241,12 @@ sbatch_config_list = \
 #SBATCH --job-name={name_slurm}
 #SBATCH --output={path}
 #SBATCH --constraint=intel
-#SBATCH --gres=gpu:1,vram:23G
-#SBATCH --partition=gpu_requeue
-#SBATCH -c 4
+#SBATCH --partition=gpu_quad
+#SBATCH --gres=gpu:1,vram:31G
+#SBATCH -c 8
 #SBATCH -n 1
-#SBATCH --mem=36GB
-#SBATCH --time=0-0:30:00
+#SBATCH --mem=48GB
+#SBATCH --time=0-7:30:00
 
 unset XDG_RUNTIME_DIR
 
